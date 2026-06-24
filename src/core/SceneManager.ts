@@ -23,14 +23,14 @@ export class SceneManager {
   constructor() {
     this.scene = new THREE.Scene();
 
-    // Another Sky aesthetic: dark, desaturated, slightly cold background.
+    // Another Sky aesthetic: dark, smoke-choked, crimson-cast background.
     // Acts as the "void" color when fog doesn't fully occlude.
-    this.scene.background = new THREE.Color(0x05070a);
+    this.scene.background = new THREE.Color(0x0a0303);
 
     // Exponential fog reads better than linear fog for atmospheric/horror
     // tone — it falls off gradually rather than with a hard cutoff edge,
     // and it scales naturally regardless of scene scale.
-    this.scene.fog = new THREE.FogExp2(0x05070a, 0.035);
+    this.scene.fog = new THREE.FogExp2(0x0a0303, 0.035);
 
     this.regionRoot = new THREE.Group();
     this.regionRoot.name = 'regionRoot';

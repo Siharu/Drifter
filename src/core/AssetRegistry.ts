@@ -39,11 +39,14 @@ export type AssetId =
   | 'radio_terminal'
   | 'maintenance_shed'
   | 'observation_deck'
+  | 'antenna_array'
   // RS7 props
   | 'vehicle_wreck'
   | 'fence'
   | 'crate'
-  | 'warning_sign';
+  | 'warning_sign'
+  // Region 02 (Service Road) structural
+  | 'checkpoint';
 
 export interface AssetDefinition {
   /** Public URL served by Vite from the /public directory. */
@@ -93,6 +96,12 @@ const ASSET_REGISTRY: Record<AssetId, AssetDefinition> = {
     tags: ['RS7'],
     description: 'Raised observation platform with stairs and railing.'
   },
+  antenna_array: {
+    url: '/assets/models/antenna_array.glb',
+    type: 'model',
+    tags: ['RS7'],
+    description: 'Cluster of 3 leaning antenna elements, ~4m tall, slight individual tilt.'
+  },
 
   // --- RS7: Props -------------------------------------------------------
   vehicle_wreck: {
@@ -118,6 +127,14 @@ const ASSET_REGISTRY: Record<AssetId, AssetDefinition> = {
     type: 'model',
     tags: ['RS7'],
     description: 'Rusted warning sign on a post.'
+  },
+
+  // --- Region 02 (Service Road): Structural elements --------------------
+  checkpoint: {
+    url: '/assets/models/checkpoint.glb',
+    type: 'model',
+    tags: ['SVC_ROAD'],
+    description: 'Abandoned roadside checkpoint booth with a lowered or broken barrier arm.'
   }
 };
 

@@ -3,24 +3,29 @@ import * as THREE from 'three';
 /**
  * LightingSystem
  * --------------
- * Atmospheric lighting setup for Another Sky: a dim, cold ambient fill
- * plus a single dominant "moonlight" directional light. Deliberately
- * minimal — no real-time GI, no multiple shadow-casting lights — to
- * stay cheap on the GPU while still reading as moody and dimensional.
+ * Atmospheric lighting setup for Another Sky: a dim, crimson-tinted
+ * ambient fill plus a single dominant "moonlight" directional light —
+ * deliberately dim and blood-toned rather than clean cold moonlight,
+ * matching the post-apocalyptic ash/smoke sky. Deliberately minimal —
+ * no real-time GI, no multiple shadow-casting lights — to stay cheap
+ * on the GPU while still reading as moody and dimensional.
  */
 export class LightingSystem {
   public readonly ambientLight: THREE.AmbientLight;
   public readonly moonLight: THREE.DirectionalLight;
 
   constructor(scene: THREE.Scene) {
-    // Low-intensity cold ambient: keeps shadow areas from going pure black
-    // without flattening the scene's contrast.
-    this.ambientLight = new THREE.AmbientLight(0x3a4a5e, 0.35);
+    // Low-intensity crimson-tinted ambient: keeps shadow areas from going
+    // pure black without flattening the scene's contrast or reading as
+    // a clean cool night — the apocalypse tints everything red.
+    this.ambientLight = new THREE.AmbientLight(0x3a1818, 0.3);
 
-    // Moonlight: a single directional light standing in for an unseen moon.
-    // Cool, slightly desaturated blue-white — avoids the "warm sunset"
-    // cliché and supports the wrongness/horror-adjacent tone.
-    this.moonLight = new THREE.DirectionalLight(0xaecbff, 1.1);
+    // Moonlight: a single directional light standing in for an unseen,
+    // dimmed moon behind ash and smoke. Dull crimson-red, noticeably
+    // dimmer than a clean moonlit night — the moon itself is barely
+    // visible per the world's lore, so its light shouldn't read as
+    // bright or cool-toned either.
+    this.moonLight = new THREE.DirectionalLight(0x6a2a2a, 0.55);
     this.moonLight.position.set(-15, 25, -10);
     this.moonLight.target.position.set(0, 0, 0);
 
