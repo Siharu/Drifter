@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import type { DiscoverySystem } from '../systems/DiscoverySystem';
 import type { Discovery } from '../systems/DiscoverySystem';
 import type { RadioSystem } from '../systems/RadioSystem';
