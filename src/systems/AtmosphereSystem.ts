@@ -151,7 +151,7 @@ export class AtmosphereSystem implements Updatable {
   private baseFogDensity = 0.035;
   private fogDensity = 0.035;
   private fogColor = new THREE.Color(0x05070a);
-  private hazeColor = new THREE.Color(0x0a0f1a);   // distant haze tint
+  private hazeColor = new THREE.Color(0x1a0a08);   // distant haze tint — smoke/ash, not blue
   private _yellowGasIntensity = 0;
 
   // --- Lights ---
@@ -294,10 +294,14 @@ export class AtmosphereSystem implements Updatable {
     this.fogDensity = clamp(density, 0.005, 0.25);
 
     // --- Fog color (time-of-day + haze + yellow gas) ---
-    const nightColor  = new THREE.Color(0x020508);
-    const dawnColor   = new THREE.Color(0x0a0f1a);
-    const dayColor    = new THREE.Color(0x0d1a26);
-    const duskColor   = new THREE.Color(0x12101a);
+    // Crimson cast persists through night/dawn/dusk per lore direction —
+    // the apocalypse colors the sky red even after dark. Day stays a
+    // neutral, smoke-dusky tone (not clean blue) so occasional red-light
+    // spikes during the day read as a deliberate departure, not the baseline.
+    const nightColor  = new THREE.Color(0x140405);
+    const dawnColor   = new THREE.Color(0x2a0a0a);
+    const dayColor    = new THREE.Color(0x2a2420);
+    const duskColor   = new THREE.Color(0x300a0a);
     const yellowColor = new THREE.Color(0x3a3200);
 
     let computedColor: THREE.Color;
@@ -318,7 +322,7 @@ export class AtmosphereSystem implements Updatable {
       computedColor = nightColor.clone();
     }
 
-    // Add distant haze tint (slightly bluer than plain fog)
+    // Add distant haze tint (smoke/ash haze — warm-dark, not blue)
     computedColor.lerp(this.hazeColor, 0.25);
 
     // Zone can override fog color entirely
