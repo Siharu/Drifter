@@ -163,6 +163,21 @@ function makePlaceholder(id: AssetId): THREE.Object3D {
       group.add(sign);
       break;
     }
+    case 'checkpoint': {
+      // Booth 1.4×2.2×1.4, plus a horizontal barrier arm angled upward —
+      // reads as "abandoned, arm left raised" rather than a tidy gate.
+      const booth = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.2, 1.4), mat);
+      booth.position.y = 1.1;
+      group.add(booth);
+      const armPost = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.1, 6), mat);
+      armPost.position.set(1, 0.55, 0);
+      group.add(armPost);
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 0.1), mat);
+      arm.position.set(1, 1.1, 0);
+      arm.rotation.z = Math.PI / 5; // raised, not resting flat — abandoned mid-use
+      group.add(arm);
+      break;
+    }
     default: {
       // Generic 1m cube fallback for any future unrecognised IDs
       const cube = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), mat);
