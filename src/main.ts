@@ -7,12 +7,15 @@ import { InteractionSystem } from './systems/InteractionSystem';
 import { DiscoverySystem } from './systems/DiscoverySystem';
 import { LogbookSystem } from './systems/LogbookSystem';
 import { AtmosphereSystem } from './systems/AtmosphereSystem';
+import { SkySystem } from './systems/SkySystem';
 import { RadioSystem } from './systems/RadioSystem';
 import { SaveManager } from './managers/SaveManager';
 import { LogbookUI } from './ui/LogbookUI';
 import { RadioNotificationPopup } from './ui/RadioNotificationPopup';
 import { BroadcastArchive } from './ui/BroadcastArchive';
+import { WorldAssetLoader } from './world/WorldAssetLoader';
 import { buildRelayStation7 } from './world/RelayStation7';
+import { buildServiceRoad } from './world/ServiceRoad';
 
 /**
  * main.ts
@@ -53,6 +56,14 @@ game.sceneManager.add(ground);
 // --- End temporary ground scaffold ---
 
 const localPlayer = new Player({ id: 'local-drifter', isLocallyControlled: true });
+// Spawn south of the relay tower, facing the station, with a clear
+// establishing view of the tower on the very first frame and the
+// nearest discovery (photo) close by — see RelayStation7.ts's layout
+// doc comment for the full spatial design. Without this, Player
+// defaults to (0,0,0), which is also the relay tower's base position.
+// A save file (if one exists) overrides this via saveManager.load()
+// further down.
+localPlayer.position.set(0, 0, 22);
 game.sceneManager.add(localPlayer.object3D);
 
 const input = new InputManager();
@@ -60,7 +71,17 @@ const playerController = new PlayerController(localPlayer, input, game.cameraCon
 game.registerSystem(playerController);
 
 game.cameraController.setTarget(localPlayer.object3D);
-game.lightingSystem.configureShadowBounds(20);
+// 30-unit radius covers RS7's layout (max structure radius ~22 units
+// from the tower) with margin.
+game.lightingSystem.configureShadowBounds(30);
+
+// --- Sky system ---
+// Static crimson/smoke sky dome with faint stars and a dim, blood-toned
+// moon — see SkySystem.ts for full lore rationale. Not yet wired to
+// AtmosphereSystem's day/night cycle; that's a deliberate future step.
+const skySystem = new SkySystem(game.sceneManager.scene, game.assets);
+skySystem.setFollowTarget(localPlayer.object3D);
+game.registerSystem(skySystem);
 
 // --- Interaction system ---
 const interactionSystem = new InteractionSystem({
@@ -109,7 +130,36 @@ saveManager.startAutosave(30_000);
 void saveManager; // retained; no further direct calls needed in main
 
 // --- Relay Station 7: the first real location ---
-const relayStation7 = buildRelayStation7(interactionSystem, discoverySystem);
+const worldAssetLoader = new WorldAssetLoader(game.assets);
+
+/**
+ * Transition from RS7 to Region 02 (Service Road). Called by RS7's
+ * region-exit Interactable. Tears down RS7's root, releases its
+ * cached assets, builds Region 02, repositions the player at its
+ * arrival point, and notifies SaveManager so the save file tracks
+ * the new region. One-directional for now — no return trip exists
+ * yet, matching the current milestone's scope.
+ */
+async function leaveRelayStation7ForServiceRoad(): Promise<void> {
+  game.sceneManager.remove(relayStation7.root);
+  worldAssetLoader.releaseRegion('RS7');
+
+  const serviceRoad = await buildServiceRoad(interactionSystem, discoverySystem, worldAssetLoader);
+  game.sceneManager.add(serviceRoad.root);
+
+  // Arrival point: south end of the road, facing the checkpoint —
+  // same establishing-view approach used for RS7's own spawn.
+  localPlayer.position.set(0, 0, 12);
+
+  saveManager.notifyRegionChange('SVC_ROAD');
+}
+
+const relayStation7 = await buildRelayStation7(
+  interactionSystem,
+  discoverySystem,
+  worldAssetLoader,
+  () => { void leaveRelayStation7ForServiceRoad(); }
+);
 game.sceneManager.add(relayStation7.root);
 
 game.start();
