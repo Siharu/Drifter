@@ -155,8 +155,6 @@ export class AtmosphereSystem implements Updatable {
   private _yellowGasIntensity = 0;
 
   // --- Lights ---
-  private baseAmbientIntensity = 0.35;
-  private baseMoonIntensity = 1.1;
 
   // --- Wind ---
   private windStrength = 0;
@@ -589,8 +587,6 @@ export class AtmosphereSystem implements Updatable {
   }
 
   private emitDistantSoundEvent(): void {
-    const sounds: DistantSoundType[] = ['rumble', 'creak', 'tone', 'static_burst', 'wind_gust'];
-
     // At night / high static: bias toward tone and static_burst (ARG feel)
     const hour = this.timeNormalized * 24;
     const isNight = hour < 6 || hour > 20;
