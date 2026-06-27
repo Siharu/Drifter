@@ -3,6 +3,7 @@ import { InputManager } from './InputManager';
 import type { Player, FacingDirection } from './Player';
 import type { CameraController } from '../core/CameraController';
 import type { Updatable } from '../core/Game';
+import type { CollisionSystem } from '../systems/CollisionSystem';
 
 /**
  * The 8 facing directions in angle order, starting at 0 radians = +Z
@@ -33,13 +34,15 @@ const DIRECTION_ORDER: FacingDirection[] = [
  * creating a PlayerController for remote players entirely — their
  * transform comes from network state instead, never from this class.
  *
- * Does NOT do collision, interaction, or combat — those are separate
- * systems layered on top later.
+ * Does NOT do interaction or combat — those are separate systems
+ * layered on top. DOES now do basic collision (see CollisionSystem)
+ * since that system was built specifically to slot in here.
  */
 export class PlayerController implements Updatable {
   private player: Player;
   private input: InputManager;
   private cameraController: CameraController;
+  private collisionSystem: CollisionSystem | null;
 
   /** Units per second. */
   private moveSpeed = 4.5;
@@ -62,7 +65,12 @@ export class PlayerController implements Updatable {
   private readonly scratchMoveDirection = new THREE.Vector3();
   private readonly scratchProposedPosition = new THREE.Vector3();
 
-  constructor(player: Player, input: InputManager, cameraController: CameraController) {
+  constructor(
+    player: Player,
+    input: InputManager,
+    cameraController: CameraController,
+    collisionSystem: CollisionSystem | null = null
+  ) {
     if (!player.isLocallyControlled) {
       // Not a hard failure — just a strong signal of misuse. A remote
       // player should never be driven by a local PlayerController.
@@ -75,6 +83,7 @@ export class PlayerController implements Updatable {
     this.player = player;
     this.input = input;
     this.cameraController = cameraController;
+    this.collisionSystem = collisionSystem;
   }
 
   public update(deltaTime: number): void {
@@ -115,16 +124,30 @@ export class PlayerController implements Updatable {
     }
     this.scratchMoveDirection.normalize();
 
-    // Proposed position this frame — written directly to the Player's
-    // transform. No collision system exists yet to intercept this; when
-    // one is built, it will sit between this computation and the final
-    // position write (e.g. as a registered correction step), without
-    // PlayerController needing to know how correction works.
+    // Proposed position this frame. If a CollisionSystem is wired in, it
+    // sits exactly here — between computing the move and writing the
+    // final position — so blocked movement slides along obstacles
+    // instead of passing through them. Facing/animation below still use
+    // the *intended* direction even when movement is fully blocked, so
+    // the player visually faces a wall they're pushing into rather than
+    // freezing mid-turn.
     this.scratchProposedPosition
       .copy(this.player.position)
       .addScaledVector(this.scratchMoveDirection, this.moveSpeed * deltaTime);
 
-    this.player.position.copy(this.scratchProposedPosition);
+    if (this.collisionSystem) {
+      const corrected = this.collisionSystem.resolve(
+        this.player.position.x,
+        this.player.position.z,
+        this.scratchProposedPosition.x,
+        this.scratchProposedPosition.z
+      );
+      this.player.position.x = corrected.x;
+      this.player.position.z = corrected.z;
+    } else {
+      this.player.position.x = this.scratchProposedPosition.x;
+      this.player.position.z = this.scratchProposedPosition.z;
+    }
 
     // Snap movement direction to the nearest of 8 facing directions —
     // this picks which sprite-sheet row is shown. Unlike the old
