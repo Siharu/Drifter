@@ -1,6 +1,34 @@
 import * as THREE from 'three';
 
 /**
+ * 8 facing directions, ordered to match the sprite sheet row order
+ * (see SpriteSheetConfig.rowOrder below for how this maps to actual
+ * texture rows — that mapping is data, not hardcoded here).
+ */
+export type FacingDirection =
+  | 'down' | 'down-left' | 'left' | 'up-left'
+  | 'up' | 'up-right' | 'right' | 'down-right';
+
+/**
+ * Describes the layout of an 8-direction sprite sheet so Player doesn't
+ * need to hardcode frame counts or row order — different sheets (e.g.
+ * a future enemy sheet) can reuse this same slicing logic with their
+ * own config.
+ */
+export interface SpriteSheetConfig {
+  /** Frames per direction row (e.g. idle + 3 walk frames = 4). */
+  framesPerRow: number;
+  /** Direction-to-row-index mapping, top to bottom in the texture. */
+  rowOrder: FacingDirection[];
+}
+
+/** Matches the 8-direction sheet layout: idle, walk1-3, per direction. */
+export const DEFAULT_SPRITE_SHEET_CONFIG: SpriteSheetConfig = {
+  framesPerRow: 4,
+  rowOrder: ['down', 'down-left', 'left', 'up-left', 'up', 'up-right', 'right', 'down-right'],
+};
+
+/**
  * Player
  * ------
  * Entity-only representation of a Logbook Drifter. Holds world transform,
@@ -9,8 +37,8 @@ import * as THREE from 'three';
  * Deliberately knows nothing about:
  * - input (see PlayerController)
  * - movement math (see PlayerController)
- * - animation decision-making (see PlayerController; this class only
- *   exposes the mesh/sprite to swap, not the logic for *when* to swap)
+ * - animation/facing DECISION-making (see PlayerController; this class
+ *   only exposes setFrame() to call, not the logic for *when* to call it)
  * - collision (not built yet)
  * - interaction (not built yet)
  *
@@ -46,12 +74,19 @@ export class Player {
   private visual: THREE.Object3D;
   private placeholderMaterial: THREE.MeshStandardMaterial;
 
+  /** Set once setSpriteSheet() has loaded a real sprite-plane visual. */
+  private spriteMaterial: THREE.SpriteMaterial | null = null;
+  private spriteSheetConfig: SpriteSheetConfig = DEFAULT_SPRITE_SHEET_CONFIG;
+
   /**
    * Placeholder slot for a future animation state machine. PlayerController
    * (or a dedicated AnimationSystem later) will read/write this; Player
    * itself does not interpret it, only stores it.
    */
   public animationState: string = 'idle';
+
+  /** Current facing direction. Defaults to 'down', matching most JRPG conventions for spawn-facing. */
+  public facing: FacingDirection = 'down';
 
   constructor(options: { id: string; isLocallyControlled?: boolean } = { id: createLocalId() }) {
     this.id = options.id;
@@ -77,20 +112,72 @@ export class Player {
   }
 
   /**
-   * Swaps the placeholder capsule for a billboarded sprite plane.
+   * Swaps the placeholder capsule for a billboarded sprite-sheet plane.
+   * The texture is expected to be a grid of [config.rowOrder.length] rows
+   * by [config.framesPerRow] columns — one row per facing direction.
+   *
    * Pure visual swap — does not touch movement, ownership, or transform.
-   * Call once a sprite atlas/texture exists.
+   * Call once a real sprite atlas exists; until then the capsule remains.
    */
-  public setSpriteTexture(texture: THREE.Texture): void {
+  public setSpriteSheet(texture: THREE.Texture, config: SpriteSheetConfig = DEFAULT_SPRITE_SHEET_CONFIG): void {
     this.object3D.remove(this.visual);
+    if (this.placeholderMaterial) {
+      this.placeholderMaterial.dispose();
+    }
 
-    const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-    const sprite = new THREE.Sprite(spriteMaterial);
+    this.spriteSheetConfig = config;
+
+    // Nearest-neighbor filtering: pixel art must not be smoothed/blurred
+    // by mipmapping or linear filtering, or it loses the crisp HD-2D look.
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.colorSpace = THREE.SRGBColorSpace;
+
+    // UV repeat is one cell's worth of the grid; offset is set per-frame
+    // by setFrame(). Starting offset matches the default facing ('down',
+    // frame 0 — i.e. row 0, column 0 of the sheet).
+    texture.repeat.set(1 / config.framesPerRow, 1 / config.rowOrder.length);
+    texture.offset.set(0, 1 - 1 / config.rowOrder.length);
+
+    this.spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(this.spriteMaterial);
     sprite.position.y = 0.9;
     sprite.scale.set(1.2, 1.8, 1);
 
     this.visual = sprite;
     this.object3D.add(sprite);
+  }
+
+  /**
+   * Selects which cell of the sprite sheet is currently displayed.
+   * PlayerController calls this every frame with the direction/frame
+   * it has decided on; Player just applies it as a UV offset.
+   *
+   * No-ops safely if setSpriteSheet() hasn't been called yet (still
+   * showing the placeholder capsule) — this keeps PlayerController free
+   * to call setFrame() unconditionally without checking sprite state.
+   */
+  public setFrame(direction: FacingDirection, frameIndex: number): void {
+    this.facing = direction;
+    if (!this.spriteMaterial || !this.spriteMaterial.map) return;
+
+    const config = this.spriteSheetConfig;
+    const rowIndex = config.rowOrder.indexOf(direction);
+    if (rowIndex === -1) {
+      console.warn(`Player.setFrame: direction "${direction}" not found in sprite sheet config rowOrder.`);
+      return;
+    }
+    const col = ((frameIndex % config.framesPerRow) + config.framesPerRow) % config.framesPerRow;
+
+    const texture = this.spriteMaterial.map;
+    const cellWidth = 1 / config.framesPerRow;
+    const cellHeight = 1 / config.rowOrder.length;
+
+    // Texture V axis is flipped relative to row order (row 0 is the TOP
+    // of the image, but V=0 is the BOTTOM of the texture in GL/Three
+    // convention), so row index counts down from the top in V-space.
+    texture.offset.set(col * cellWidth, 1 - cellHeight * (rowIndex + 1));
   }
 
   /** Returns the currently active visual object (mesh or sprite). */
@@ -102,6 +189,7 @@ export class Player {
   public dispose(): void {
     this.object3D.remove(this.visual);
     this.placeholderMaterial.dispose();
+    this.spriteMaterial?.dispose();
   }
 }
 
