@@ -3,6 +3,7 @@ import { Game } from './core/Game';
 import { InputManager } from './player/InputManager';
 import { Player } from './player/Player';
 import { PlayerController } from './player/PlayerController';
+import { createPlaceholderSpriteSheet } from './player/PlaceholderSprites';
 import { InteractionSystem } from './systems/InteractionSystem';
 import { DiscoverySystem } from './systems/DiscoverySystem';
 import { LogbookSystem } from './systems/LogbookSystem';
@@ -65,6 +66,11 @@ const localPlayer = new Player({ id: 'local-drifter', isLocallyControlled: true 
 // further down.
 localPlayer.position.set(0, 0, 22);
 game.sceneManager.add(localPlayer.object3D);
+
+// Temporary placeholder sprite sheet — delete this call (and
+// PlaceholderSprites.ts) once real pixel art for the Drifter exists.
+// Verifies the 8-direction facing + walk-cycle system visually.
+localPlayer.setSpriteSheet(createPlaceholderSpriteSheet());
 
 const input = new InputManager();
 const playerController = new PlayerController(localPlayer, input, game.cameraController);
