@@ -71,70 +71,70 @@ export interface AssetDefinition {
 // ---------------------------------------------------------------------------
 
 const ASSET_REGISTRY: Record<AssetId, AssetDefinition> = {
-  // --- RS7: Structural elements ----------------------------------------
+  // --- RS7: Structural elements (mapped to retro-urban-kit) ----------------------------------------
   relay_tower: {
-    url: '/assets/models/relay_tower.glb',
+    url: '/assets/models/retro-urban-kit/roof-metal-poles.glb',
     type: 'model',
     tags: ['RS7'],
-    description: 'Central relay tower. 20m tall metal structure with warning light.'
+    description: 'Central relay tower structure (roof-metal-poles).'
   },
   radio_terminal: {
-    url: '/assets/models/radio_terminal.glb',
+    url: '/assets/models/retro-urban-kit/scaffolding-structure.glb',
     type: 'model',
     tags: ['RS7'],
-    description: 'Small radio terminal building with pyramidal roof and antenna.'
+    description: 'Small radio terminal building (scaffolding-structure).'
   },
   maintenance_shed: {
-    url: '/assets/models/maintenance_shed.glb',
+    url: '/assets/models/retro-urban-kit/wall-a-flat.glb',
     type: 'model',
     tags: ['RS7'],
-    description: 'Small maintenance shed adjacent to the relay tower.'
+    description: 'Small maintenance shed structure (wall-a-flat).'
   },
   observation_deck: {
-    url: '/assets/models/observation_deck.glb',
+    url: '/assets/models/retro-urban-kit/scaffolding-floor.glb',
     type: 'model',
     tags: ['RS7'],
-    description: 'Raised observation platform with stairs and railing.'
+    description: 'Raised observation platform (scaffolding-floor).'
   },
   antenna_array: {
-    url: '/assets/models/antenna_array.glb',
+    url: '/assets/models/retro-urban-kit/detail-cables-type-a.glb',
     type: 'model',
     tags: ['RS7'],
-    description: 'Cluster of 3 leaning antenna elements, ~4m tall, slight individual tilt.'
+    description: 'Antenna array structure (detail-cables-type-a).'
   },
 
   // --- RS7: Props -------------------------------------------------------
   vehicle_wreck: {
-    url: '/assets/models/vehicle_wreck.glb',
+    url: '/assets/models/retro-urban-kit/truck-flat.glb',
     type: 'model',
     tags: ['RS7'],
-    description: 'Broken-down vehicle, partially sunken into ground.'
+    description: 'Broken-down vehicle prop (truck-flat).'
   },
   fence: {
-    url: '/assets/models/fence.glb',
+    url: '/assets/models/retro-urban-kit/wall-fence.glb',
     type: 'model',
     tags: ['RS7'],
-    description: 'Chain-link or rusted metal fence segment.'
+    description: 'Fence segment from retro-urban-kit.'
   },
   crate: {
-    url: '/assets/models/crate.glb',
+    url: '/assets/models/retro-urban-kit/pallet.glb',
     type: 'model',
     tags: ['RS7'],
-    description: 'Weathered storage crate. Stackable prop.'
+    description: 'Storage prop (pallet).'
   },
   warning_sign: {
-    url: '/assets/models/warning_sign.glb',
+    url: '/assets/models/retro-urban-kit/detail-light-traffic.glb',
     type: 'model',
     tags: ['RS7'],
-    description: 'Rusted warning sign on a post.'
+    description: 'Warning sign prop (detail-light-traffic).'
   },
 
   // --- Region 02 (Service Road): Structural elements --------------------
   checkpoint: {
-    url: '/assets/models/checkpoint.glb',
+    url: '/assets/models/retro-urban-kit/wall-a-flat-garage.glb',
     type: 'model',
     tags: ['SVC_ROAD'],
-    description: 'Abandoned roadside checkpoint booth with a lowered or broken barrier arm.'
+    description: 'Checkpoint booth structure (wall-a-flat-garage).'
   }
 };
 
