@@ -63,8 +63,8 @@ export class InteractionSystem implements Updatable {
     this.promptElement = this.createPromptElement();
     this.container.appendChild(this.promptElement);
 
-    window.addEventListener('keydown', this.handleKeyDown);
-    window.addEventListener('keyup', this.handleKeyUp);
+    document.addEventListener('keydown', this.handleKeyDown);
+    document.addEventListener('keyup', this.handleKeyUp);
   }
 
   /** Registers a world object as interactable. Returns it for convenience/chaining. */
@@ -99,6 +99,7 @@ export class InteractionSystem implements Updatable {
     if (nearest !== this.activeTarget) {
       this.activeTarget = nearest;
       if (nearest) {
+        console.log(`[InteractionSystem] Active target: ${nearest.label}`);
         this.showPrompt(nearest.label);
       } else {
         this.hidePrompt();
@@ -109,7 +110,12 @@ export class InteractionSystem implements Updatable {
     const justPressed = interactKeyIsDown && !this.interactKeyWasDown;
     this.interactKeyWasDown = interactKeyIsDown;
 
+    if (justPressed) {
+      console.log(`[InteractionSystem] E pressed, active target:`, this.activeTarget?.label);
+    }
+
     if (justPressed && this.activeTarget) {
+      console.log(`[InteractionSystem] Triggering interaction: ${this.activeTarget.label}`);
       this.activeTarget.trigger({ playerId: this.subjectPlayerId });
     }
   }
@@ -141,12 +147,14 @@ export class InteractionSystem implements Updatable {
 
   private handleKeyDown = (event: KeyboardEvent): void => {
     if (event.code === 'KeyE') {
+      console.log('[InteractionSystem] E key DOWN');
       this.isInteractKeyDown = true;
     }
   };
 
   private handleKeyUp = (event: KeyboardEvent): void => {
     if (event.code === 'KeyE') {
+      console.log('[InteractionSystem] E key UP');
       this.isInteractKeyDown = false;
     }
   };
@@ -185,8 +193,8 @@ export class InteractionSystem implements Updatable {
 
   /** Removes listeners and DOM elements. Call on teardown / hot-reload. */
   public dispose(): void {
-    window.removeEventListener('keydown', this.handleKeyDown);
-    window.removeEventListener('keyup', this.handleKeyUp);
+    document.removeEventListener('keydown', this.handleKeyDown);
+    document.removeEventListener('keyup', this.handleKeyUp);
     if (this.promptElement.parentElement === this.container) {
       this.container.removeChild(this.promptElement);
     }
