@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Interactable } from './Interactable';
 import { InteractionSystem } from '../systems/InteractionSystem';
 import { DiscoverySystem } from '../systems/DiscoverySystem';
+import type { CollisionSystem } from '../systems/CollisionSystem';
 import { WorldAssetLoader } from './WorldAssetLoader';
 
 /**
@@ -47,7 +48,8 @@ export interface ServiceRoadInstance {
 export async function buildServiceRoad(
   interactionSystem: InteractionSystem,
   discoverySystem: DiscoverySystem,
-  loader: WorldAssetLoader
+  loader: WorldAssetLoader,
+  _collisionSystem: CollisionSystem | null = null  // Future: add collision bounds here
 ): Promise<ServiceRoadInstance> {
   const root = new THREE.Group();
   root.name = 'ServiceRoad';
