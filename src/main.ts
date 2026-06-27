@@ -10,6 +10,7 @@ import { LogbookSystem } from './systems/LogbookSystem';
 import { AtmosphereSystem } from './systems/AtmosphereSystem';
 import { SkySystem } from './systems/SkySystem';
 import { RadioSystem } from './systems/RadioSystem';
+import { CollisionSystem } from './systems/CollisionSystem';
 import { SaveManager } from './managers/SaveManager';
 import { LogbookUI } from './ui/LogbookUI';
 import { RadioNotificationPopup } from './ui/RadioNotificationPopup';
@@ -73,7 +74,8 @@ game.sceneManager.add(localPlayer.object3D);
 localPlayer.setSpriteSheet(createPlaceholderSpriteSheet());
 
 const input = new InputManager();
-const playerController = new PlayerController(localPlayer, input, game.cameraController);
+const collisionSystem = new CollisionSystem();
+const playerController = new PlayerController(localPlayer, input, game.cameraController, collisionSystem);
 game.registerSystem(playerController);
 
 game.cameraController.setTarget(localPlayer.object3D);
@@ -149,8 +151,9 @@ const worldAssetLoader = new WorldAssetLoader(game.assets);
 async function leaveRelayStation7ForServiceRoad(): Promise<void> {
   game.sceneManager.remove(relayStation7.root);
   worldAssetLoader.releaseRegion('RS7');
+  collisionSystem.clear(); // Clear all RS7 colliders before building new region
 
-  const serviceRoad = await buildServiceRoad(interactionSystem, discoverySystem, worldAssetLoader);
+  const serviceRoad = await buildServiceRoad(interactionSystem, discoverySystem, worldAssetLoader, collisionSystem);
   game.sceneManager.add(serviceRoad.root);
 
   // Arrival point: south end of the road, facing the checkpoint —
@@ -164,7 +167,8 @@ const relayStation7 = await buildRelayStation7(
   interactionSystem,
   discoverySystem,
   worldAssetLoader,
-  () => { void leaveRelayStation7ForServiceRoad(); }
+  () => { void leaveRelayStation7ForServiceRoad(); },
+  collisionSystem
 );
 game.sceneManager.add(relayStation7.root);
 
