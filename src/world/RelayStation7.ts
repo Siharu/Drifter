@@ -3,6 +3,7 @@ import { Interactable } from './Interactable';
 import { InteractionSystem } from '../systems/InteractionSystem';
 import { DiscoverySystem } from '../systems/DiscoverySystem';
 import { WorldAssetLoader } from './WorldAssetLoader';
+import type { CollisionSystem } from '../systems/CollisionSystem';
 
 /**
  * RelayStation7
@@ -84,12 +85,17 @@ export async function buildRelayStation7(
   interactionSystem: InteractionSystem,
   discoverySystem: DiscoverySystem,
   loader: WorldAssetLoader,
-  onLeaveRegion: () => void
+  onLeaveRegion: () => void,
+  collisionSystem: CollisionSystem | null = null
 ): Promise<RelayStation7Instance> {
   const root = new THREE.Group();
   root.name = 'RelayStation7';
 
   buildGround(root);
+
+  if (collisionSystem) {
+    registerCollisionBounds(collisionSystem);
+  }
 
   const spawns = await Promise.all([
     loader.spawn('relay_tower', { position: new THREE.Vector3(0, 0, 0), regionId: REGION_ID }),
@@ -148,6 +154,73 @@ export async function buildRelayStation7(
   createRegionExit(root, interactionSystem, onLeaveRegion);
 
   return { root };
+}
+
+// ---------------------------------------------------------------------------
+// Collision
+// ---------------------------------------------------------------------------
+
+/**
+ * Registers static colliders for RS7's solid structures and props.
+ *
+ * Footprints here are matched to WorldAssetLoader.makePlaceholder()'s
+ * actual geometry for each asset ID — see that file for the source of
+ * truth on dimensions. If/when real GLB models replace these
+ * placeholders, re-check these numbers against the new models; they are
+ * deliberately NOT derived automatically from mesh bounds (see
+ * CollisionSystem's doc comment for why).
+ *
+ * Deliberately excluded from collision (by design, not oversight):
+ *   - Survey note, damaged photo: tiny ground-level discovery items —
+ *     blocking movement on these would be actively annoying given how
+ *     small and easy to want to stand on top of they are.
+ *   - Region exit anchor: invisible trigger, not a physical object.
+ *   - Cable run, ground-crack lines, debris pieces: thin/flat decoration
+ *     well below anything a player would expect to collide with.
+ *   - Warning signs: thin post + small sign; visually unobtrusive enough
+ *     that colliding with them reads as "snagged on nothing."
+ */
+function registerCollisionBounds(collisionSystem: CollisionSystem): void {
+  // Relay tower — cylinder, radius ~1.1 at base (CylinderGeometry(0.9, 1.1, 20, 8)).
+  collisionSystem.addCircle(0, 0, 1.1, 'relay_tower');
+
+  // Radio terminal — box 3x2 footprint (BoxGeometry(3, 3, 2): width 3, depth 2).
+  collisionSystem.addBox(-10, -8, 3, 2, 'radio_terminal');
+
+  // Antenna array — no explicit placeholder case in makePlaceholder(), falls
+  // through to the generic 1m cube default. Treat as a small circle.
+  collisionSystem.addCircle(-14, -8, 0.6, 'antenna_array');
+
+  // Maintenance shed — box 2x1.8 footprint.
+  collisionSystem.addBox(-10, -16, 2, 1.8, 'maintenance_shed');
+
+  // Observation deck — platform is elevated (y=3), player walks under it;
+  // only the support pillar (radius 0.3) is actually at ground level.
+  collisionSystem.addCircle(14, -6, 0.3, 'observation_deck_pillar');
+
+  // Vehicle wreck — box 1.2x2.8 footprint (note: registered at y=-0.5 in
+  // RelayStation7's spawn call, sunken into ground — XZ footprint unaffected).
+  collisionSystem.addBox(6, 10, 1.2, 2.8, 'vehicle_wreck');
+
+  // Fence segments — each panel is 4m wide, 0.1m thick (BoxGeometry(4, 1.5, 0.1)).
+  // A real perimeter boundary; the deliberate gap at x=9 (see RelayStation7's
+  // spawn list) is intentionally left open here too — no collider there.
+  const fenceZ = 14;
+  for (const fenceX of [-1, 1, 3, 5, 7, 11, 13]) {
+    collisionSystem.addBox(fenceX, fenceZ, 4, 0.1, `fence_${fenceX}`);
+  }
+
+  // Crates — 0.8m cubes, two small clusters.
+  for (const [cx, cz] of [[-12, -17], [-11.3, -17.6], [-12.6, -16.3], [7.5, 9], [8.2, 10.5]] as const) {
+    collisionSystem.addBox(cx, cz, 0.8, 0.8, 'crate');
+  }
+
+  // Hand-built props from buildPlaceholderProps(): desk, generator, barrels.
+  // Chair is deliberately excluded — small, pushed-back, low collision value.
+  collisionSystem.addBox(-10, -6.3, 1.4, 0.6, 'desk');
+  collisionSystem.addBox(-8.5, -16.5, 1.1, 0.8, 'generator');
+  collisionSystem.addCircle(-9, -17.6, 0.3, 'barrel');
+  collisionSystem.addCircle(-8.4, -17.8, 0.3, 'barrel');
 }
 
 // ---------------------------------------------------------------------------
